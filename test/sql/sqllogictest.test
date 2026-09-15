@@ -1,0 +1,66 @@
+# name: test/extension/sqllogictest.test
+# description: Run sqllogictests from SQL through the loadable sqllogictest extension
+# group: [extension]
+
+require notwindows
+
+# installs from the build's local extension repository, and skips when it was not built
+require sqllogictest
+
+query IIII
+SELECT status, statements_passed, statements_failed, assertions
+FROM run_test('test/extension/sqllogictest_fixtures/passing.test.in', temp_directory := '{TEST_DIR}/sqllogictest')
+----
+SUCCESS	3	0	3
+
+query II
+SELECT status, statements_failed
+FROM run_test('test/extension/sqllogictest_fixtures/failing.test.in', temp_directory := '{TEST_DIR}/sqllogictest')
+----
+FAIL	1
+
+query I
+SELECT message LIKE '%failing.test.in:5%'
+FROM run_test('test/extension/sqllogictest_fixtures/failing.test.in', temp_directory := '{TEST_DIR}/sqllogictest')
+----
+true
+
+query II
+SELECT status, message
+FROM run_test('test/extension/sqllogictest_fixtures/unsupported.test.in', temp_directory := '{TEST_DIR}/sqllogictest')
+----
+UNSUPPORTED	require-env THIS_ENVIRONMENT_VARIABLE_IS_NEVER_SET
+
+# a glob only picks up .test / .test_slow / .test_coverage files
+query I
+SELECT count(*) FROM run_tests('test/extension/sqllogictest_fixtures/**', temp_directory := '{TEST_DIR}/sqllogictest')
+----
+0
+
+# a parallel run covers every file of the glob and reaches the same verdicts
+query I
+SELECT count(*) = (SELECT count(*) FROM glob('test/sql/types/alias/**/*.test')) AND bool_and(status = 'SUCCESS')
+FROM run_tests('test/sql/types/alias/**/*.test', workers=4, temp_directory := '{TEST_DIR}/sqllogictest')
+----
+true
+
+# the corpus compiled into the extension is visible, and runs
+query I
+SELECT count(*) > 1000 FROM glob('sqllogic://')
+----
+true
+
+query I
+SELECT status FROM run_test('sqllogic://duckdb/types/test_typeof.test', temp_directory := '{TEST_DIR}/sqllogictest')
+----
+SUCCESS
+
+statement error
+FROM run_test('test/extension/sqllogictest_fixtures/does_not_exist.test.in', temp_directory := '{TEST_DIR}/sqllogictest')
+----
+<REGEX>:.*does not exist.*
+
+statement error
+FROM run_test('test/extension/sqllogictest_fixtures/passing.test.in', temp_directory := '{TEST_DIR}/x', not_a_parameter=42)
+----
+<REGEX>:.*not_a_parameter.*

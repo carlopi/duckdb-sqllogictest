@@ -1,0 +1,8 @@
+# name: test/extension/sqllogictest_fixtures/failing.test.in
+# description: Fixture executed through run_test - not discovered as a test itself
+# group: [sqllogictest_fixtures]
+
+query I
+SELECT 42
+----
+43

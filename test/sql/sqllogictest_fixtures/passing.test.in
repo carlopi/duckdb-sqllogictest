@@ -1,0 +1,14 @@
+# name: test/extension/sqllogictest_fixtures/passing.test.in
+# description: Fixture executed through run_test - not discovered as a test itself
+# group: [sqllogictest_fixtures]
+
+statement ok
+CREATE TABLE integers(i INTEGER);
+
+statement ok
+INSERT INTO integers VALUES (42);
+
+query I
+SELECT i FROM integers
+----
+42

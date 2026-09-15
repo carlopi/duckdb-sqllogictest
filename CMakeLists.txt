@@ -1,12 +1,6 @@
 cmake_minimum_required(VERSION 3.5)
 
-# Set extension name here
-set(TARGET_NAME waddle)
-
-# DuckDB's extension distribution supports vcpkg. As such, dependencies can be added in ./vcpkg.json and then
-# used in cmake with find_package. Feel free to remove or replace with other dependencies.
-# Note that it should also be removed from vcpkg.json to prevent needlessly installing it..
-find_package(OpenSSL REQUIRED)
+set(TARGET_NAME sqllogictest)
 
 set(EXTENSION_NAME ${TARGET_NAME}_extension)
 set(LOADABLE_EXTENSION_NAME ${TARGET_NAME}_loadable_extension)
@@ -16,16 +10,48 @@ project(${TARGET_NAME})
 set(CMAKE_CXX_STANDARD "17" CACHE STRING "C++ standard to enforce")
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
-include_directories(src/include)
+# The runner lives in DuckDB's test tree, which is not a public API: these are compiled straight
+# out of the submodule, so the pinned DuckDB and this extension always agree.
+set(DUCKDB_SRC "${CMAKE_CURRENT_SOURCE_DIR}/duckdb")
 
-set(EXTENSION_SOURCES src/waddle_extension.cpp)
+add_definitions(-DDUCKDB_BUILD_DIRECTORY="${PROJECT_BINARY_DIR}")
 
-build_static_extension(${TARGET_NAME} ${EXTENSION_SOURCES})
+# The bundled corpus: the list is checked in so the selection is reviewable, the content is read
+# from the submodule at build time so it cannot drift from the tests themselves.
+set(BUNDLED_TESTS_CPP "${CMAKE_CURRENT_BINARY_DIR}/bundled_tests.cpp")
+add_custom_command(
+  OUTPUT ${BUNDLED_TESTS_CPP}
+  COMMAND ${CMAKE_COMMAND} -E echo "Embedding bundled sqllogictests"
+  COMMAND python3 ${CMAKE_CURRENT_SOURCE_DIR}/scripts/generate_bundled_sqllogictests.py
+          ${CMAKE_CURRENT_SOURCE_DIR}/src/bundled_tests.list ${DUCKDB_SRC} ${BUNDLED_TESTS_CPP}
+  DEPENDS ${CMAKE_CURRENT_SOURCE_DIR}/src/bundled_tests.list
+          ${CMAKE_CURRENT_SOURCE_DIR}/scripts/generate_bundled_sqllogictests.py
+  COMMENT "Embedding bundled sqllogictests")
+
+set(EXTENSION_SOURCES
+    src/sqllogictest_extension.cpp
+    src/bundled_file_system.cpp
+    ${DUCKDB_SRC}/test/sqlite/result_helper.cpp
+    ${DUCKDB_SRC}/test/sqlite/sqllogic_command.cpp
+    ${DUCKDB_SRC}/test/sqlite/sqllogic_parser.cpp
+    ${DUCKDB_SRC}/test/sqlite/sqllogic_test_logger.cpp
+    ${DUCKDB_SRC}/test/sqlite/sqllogic_test_runner.cpp
+    ${DUCKDB_SRC}/test/helpers/pid.cpp
+    ${DUCKDB_SRC}/test/helpers/test_config.cpp
+    ${DUCKDB_SRC}/test/helpers/test_helpers.cpp
+    ${DUCKDB_SRC}/test/helpers/test_reporter.cpp
+    ${BUNDLED_TESTS_CPP})
+
 build_loadable_extension(${TARGET_NAME} " " ${EXTENSION_SOURCES})
 
-# Link OpenSSL in both the static library as the loadable extension
-target_link_libraries(${EXTENSION_NAME} OpenSSL::SSL OpenSSL::Crypto)
-target_link_libraries(${LOADABLE_EXTENSION_NAME} OpenSSL::SSL OpenSSL::Crypto)
+target_include_directories(
+  ${LOADABLE_EXTENSION_NAME}
+  PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}/src/include"
+          "${DUCKDB_SRC}/test/include"
+          "${DUCKDB_SRC}/test/sqlite"
+          "${DUCKDB_SRC}/third_party/re2")
+# result comparison uses re2, whose symbols are not exported from the duckdb library
+target_link_libraries(${LOADABLE_EXTENSION_NAME} duckdb_re2)
 
 install(
   TARGETS ${EXTENSION_NAME}

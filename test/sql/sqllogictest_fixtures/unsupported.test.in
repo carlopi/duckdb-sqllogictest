@@ -1,0 +1,10 @@
+# name: test/extension/sqllogictest_fixtures/unsupported.test.in
+# description: Fixture executed through run_test - not discovered as a test itself
+# group: [sqllogictest_fixtures]
+
+require-env THIS_ENVIRONMENT_VARIABLE_IS_NEVER_SET
+
+query I
+SELECT 42
+----
+42
