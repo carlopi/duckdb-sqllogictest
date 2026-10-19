@@ -615,9 +615,11 @@ void LoadInternal(ExtensionLoader &loader) {
 	fs.RegisterSubSystem(make_uniq<BundledFileSystem>());
 	for (auto &name : {"run_test", "run_tests"}) {
 		TableFunction run_tests(name, {LogicalType::VARCHAR}, RunTestsFunction, RunTestsBind, RunTestsInit);
-		run_tests.named_parameters["temp_directory"] = LogicalType::VARCHAR;
-		run_tests.named_parameters["home_directory"] = LogicalType::VARCHAR;
-		run_tests.named_parameters["workers"] = LogicalType::BIGINT;
+		// a NULL default is "not specified", which the bind reads the same as leaving the parameter out
+		run_tests.GetSignature()
+		    .AddKeywordOnly("temp_directory", LogicalType::VARCHAR, Value(LogicalType::VARCHAR))
+		    .AddKeywordOnly("home_directory", LogicalType::VARCHAR, Value(LogicalType::VARCHAR))
+		    .AddKeywordOnly("workers", LogicalType::BIGINT, Value(LogicalType::BIGINT));
 		loader.RegisterFunction(run_tests);
 	}
 }
