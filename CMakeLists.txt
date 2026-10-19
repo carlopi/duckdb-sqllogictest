@@ -20,6 +20,8 @@ add_definitions(-DDUCKDB_BUILD_DIRECTORY="${CMAKE_BINARY_DIR}")
 # The bundled corpus: the list is checked in so the selection is reviewable, the content is read
 # from the submodule at build time so it cannot drift from the tests themselves.
 set(BUNDLED_TESTS_CPP "${CMAKE_CURRENT_BINARY_DIR}/bundled_tests.cpp")
+# the tests themselves are dependencies too, so a submodule bump re-embeds them
+file(GLOB_RECURSE BUNDLED_TEST_SOURCES "${DUCKDB_SRC}/test/sql/*.test")
 add_custom_command(
   OUTPUT ${BUNDLED_TESTS_CPP}
   COMMAND ${CMAKE_COMMAND} -E echo "Embedding bundled sqllogictests"
@@ -27,6 +29,7 @@ add_custom_command(
           ${CMAKE_CURRENT_SOURCE_DIR}/src/bundled_tests.list ${DUCKDB_SRC} ${BUNDLED_TESTS_CPP}
   DEPENDS ${CMAKE_CURRENT_SOURCE_DIR}/src/bundled_tests.list
           ${CMAKE_CURRENT_SOURCE_DIR}/scripts/generate_bundled_sqllogictests.py
+          ${BUNDLED_TEST_SOURCES}
   COMMENT "Embedding bundled sqllogictests")
 
 set(EXTENSION_SOURCES

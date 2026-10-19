@@ -68,17 +68,25 @@ and on none of the databases the tests themselves run on — those are meant to 
 DuckDB.
 
 The selection is every test in `test/sql` that passes with the process started outside the tree,
-i.e. one that reads nothing but itself. To refresh it after tests are added or removed, sweep from
-a directory that is not the duckdb root and keep what passed:
+i.e. one that reads nothing but itself. A test that `require`s an extension stays in: it passes
+wherever that extension is available and reports `UNSUPPORTED` elsewhere. To refresh the list
+after a submodule bump, build with the extensions those tests need in the local repository, then
+sweep serially from a directory that is not the duckdb root and keep what passed:
+
+```bash
+CORE_EXTENSIONS='json;icu;autocomplete;tpch;tpcds' GEN=ninja make release
+```
 
 ```sql
-COPY (SELECT replace(name, '<duckdb root>/', '') FROM run_tests('<duckdb root>/test/sql/**/*.test')
+COPY (SELECT replace(name, '<duckdb root>/', '')
+      FROM run_tests('<duckdb root>/test/sql/**/*.test', temp_directory := '<somewhere>')
       WHERE status = 'SUCCESS' ORDER BY 1) TO 'bundled_tests.list' (HEADER false);
 ```
 
-then put the two header comments back on top of
-`src/bundled_tests.list`. The list is checked in so the selection reads as
-a diff; the content is read from the tree at build time, so it cannot drift from the tests.
+Serially, because a parallel run refuses the tests it cannot run on a worker thread. Then put the
+two header comments back on top of `src/bundled_tests.list`. The list is checked in so the
+selection reads as a diff; the content is read from the tree at build time, so it cannot drift
+from the tests, and the build says how many of the listed tests it embedded.
 
 ## Running tests in parallel
 
