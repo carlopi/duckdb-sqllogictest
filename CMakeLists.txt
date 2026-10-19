@@ -14,7 +14,8 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 # out of the submodule, so the pinned DuckDB and this extension always agree.
 set(DUCKDB_SRC "${CMAKE_CURRENT_SOURCE_DIR}/duckdb")
 
-add_definitions(-DDUCKDB_BUILD_DIRECTORY="${PROJECT_BINARY_DIR}")
+# The runner resolves {BUILD_DIRECTORY} and its local extension repository against DuckDB's build dir
+add_definitions(-DDUCKDB_BUILD_DIRECTORY="${CMAKE_BINARY_DIR}")
 
 # The bundled corpus: the list is checked in so the selection is reviewable, the content is read
 # from the submodule at build time so it cannot drift from the tests themselves.

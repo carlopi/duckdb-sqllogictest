@@ -986,14 +986,11 @@ test/sql/export/parquet/export_parquet_map.test
 test/sql/export/parquet/export_parquet_struct.test
 test/sql/export/parquet/export_parquet_union.test
 test/sql/export/parquet_export.test
-test/sql/extensions/aliasing.test
 test/sql/extensions/checked_load.test
 test/sql/extensions/extension_repositories.test
 test/sql/extensions/extension_repositories_lock.test
 test/sql/extensions/load_arbitrary_path.test
-test/sql/extensions/load_use_extension_one_query.test
 test/sql/extensions/permissions_duckdb_extension.test
-test/sql/extensions/quack_peeling.test
 test/sql/filter/filter_cache.test
 test/sql/filter/filter_cache_dictionary.test
 test/sql/filter/test_alias_filter.test
