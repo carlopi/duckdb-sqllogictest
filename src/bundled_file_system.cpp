@@ -88,6 +88,29 @@ bool BundledFileSystem::FileExists(const string &filename, optional_ptr<FileOpen
 	return FindBundledTest(filename) != nullptr;
 }
 
+//! Matches like the local file system does: * stays within one path segment, ** spans any number
+//! of segments, including none.
+static bool GlobMatches(const vector<string> &name, idx_t n, const vector<string> &pattern, idx_t p) {
+	if (p == pattern.size()) {
+		return n == name.size();
+	}
+	if (pattern[p] == "**") {
+		for (idx_t skip = n; skip <= name.size(); skip++) {
+			if (GlobMatches(name, skip, pattern, p + 1)) {
+				return true;
+			}
+		}
+		return false;
+	}
+	if (n == name.size()) {
+		return false;
+	}
+	auto &segment = name[n];
+	auto &wildcard = pattern[p];
+	return ::duckdb::Glob(segment.c_str(), segment.size(), wildcard.c_str(), wildcard.size()) &&
+	       GlobMatches(name, n + 1, pattern, p + 1);
+}
+
 vector<OpenFileInfo> BundledFileSystem::Glob(const string &path, FileOpener *opener) {
 	// Ordinary glob semantics, with one shorthand: a path ending in a separator - sqllogic:// or
 	// sqllogic://duckdb/ - stands for everything below it, i.e. an implied **.
@@ -95,10 +118,11 @@ vector<OpenFileInfo> BundledFileSystem::Glob(const string &path, FileOpener *ope
 	if (pattern.empty() || StringUtil::EndsWith(pattern, "/")) {
 		pattern += "**";
 	}
+	auto pattern_segments = StringUtil::Split(pattern, '/');
 	vector<OpenFileInfo> result;
 	for (idx_t i = 0; i < BUNDLED_TEST_COUNT; i++) {
 		string name = BUNDLED_TESTS[i].path;
-		if (::duckdb::Glob(name.c_str(), name.size(), pattern.c_str(), pattern.size())) {
+		if (GlobMatches(StringUtil::Split(name, '/'), 0, pattern_segments, 0)) {
 			result.emplace_back(SCHEME + name);
 		}
 	}
