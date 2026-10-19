@@ -207,7 +207,7 @@ constexpr SkippedTest SKIPPED_TESTS[] = {
     {"test/sql/extensions/allowed_directories_install.test",
      "asserts on which directories extensions may be installed into, which a run redirects in order "
      "to keep installs out of the caller's home"},
-    {"test/extension/sqllogictest.test",
+    {"test/sql/sqllogictest.test",
      "tests this extension itself, by running fixtures that fail on purpose - useful in CI, but "
      "noise when it is swept up in a run over the tree"},
 };
@@ -222,6 +222,9 @@ string SkipReason(const string &path) {
 	}
 	return string();
 }
+
+//! Why this test cannot share the process with others, or empty when it can.
+string ParallelUnsafeReason(ClientContext &context, const string &path);
 
 //! Runs one .test file. A verdict for the test comes back as the returned outcome; anything the
 //! setup around the run itself throws is turned into an outcome by RunTestFileSafe below.

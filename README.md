@@ -9,7 +9,7 @@ FROM run_tests('sqllogic://duckdb/');            -- the corpus that ships with t
 FROM run_test('test/sql/types/test_typeof.test'); -- or a path, if you have a test tree
 ```
 
-See `EXTENSION.md` for the full reference: result columns, named parameters
+See `docs/sqllogictest.md` for the full reference: result columns, named parameters
 (`temp_directory`, `home_directory`, `workers`), the bundled corpus, and the limitations.
 
 ## Layout

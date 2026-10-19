@@ -77,7 +77,7 @@ COPY (SELECT replace(name, '<duckdb root>/', '') FROM run_tests('<duckdb root>/t
 ```
 
 then put the two header comments back on top of
-`test/extension/sqllogictest/bundled_tests.list`. The list is checked in so the selection reads as
+`src/bundled_tests.list`. The list is checked in so the selection reads as
 a diff; the content is read from the tree at build time, so it cannot drift from the tests.
 
 ## Running tests in parallel

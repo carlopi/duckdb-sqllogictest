@@ -52,9 +52,3 @@ target_include_directories(
           "${DUCKDB_SRC}/third_party/re2")
 # result comparison uses re2, whose symbols are not exported from the duckdb library
 target_link_libraries(${LOADABLE_EXTENSION_NAME} duckdb_re2)
-
-install(
-  TARGETS ${EXTENSION_NAME}
-  EXPORT "${DUCKDB_EXPORT_SET}"
-  LIBRARY DESTINATION "${INSTALL_LIB_DIR}"
-  ARCHIVE DESTINATION "${INSTALL_LIB_DIR}")
